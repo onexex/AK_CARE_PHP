@@ -11,7 +11,7 @@ if (empty($id)) {
 
 try {
     // I-update ang status sa 'Cancelled'
-    $stmt = $conn->prepare("UPDATE teleconsult_requests SET status = 'Cancelled' WHERE id = ? AND status = 'Pending'");
+    $stmt = $conn->prepare("UPDATE teleconsult_requests SET status = 'Cancelled' WHERE request_id  = ? AND status = 'Pending'");
     $stmt->bind_param("i", $id);
     
     if ($stmt->execute() && $stmt->affected_rows > 0) {

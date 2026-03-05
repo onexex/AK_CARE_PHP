@@ -11,7 +11,7 @@ if (empty($user_id)) {
 
 try {
     // Kunin ang mga requests mula sa pinakabago (DESC)
-    $sql = "SELECT  consultation_reason, preferred_date, phone_number, status, created_at 
+    $sql = "SELECT request_id, consultation_reason, preferred_date, phone_number, status, created_at 
             FROM teleconsult_requests 
             WHERE phone_number = ? 
             ORDER BY created_at DESC";
