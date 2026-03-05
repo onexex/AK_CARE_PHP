@@ -1,0 +1,26 @@
+<?php
+header('Content-Type: application/json');
+include 'config.php';
+
+$user_id = $_GET['user_id'] ?? '';
+
+if (empty($user_id)) {
+    echo json_encode(["status" => "error", "message" => "User ID is required"]);
+    exit;
+}
+
+$stmt = $conn->prepare("SELECT * FROM tblcrmlogsdata WHERE p_contact = ? ORDER BY created_at DESC");
+$stmt->bind_param("s", $user_id);
+$stmt->execute();
+$result = $stmt->get_result();
+
+    $history = [];
+    while ($row = $result->fetch_assoc()) {
+        $history[] = $row;
+    }
+
+    echo json_encode([
+        "status" => "success",
+        "data" => $history
+    ]);
+?>
