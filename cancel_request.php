@@ -1,7 +1,7 @@
 <?php
 header('Content-Type: application/json');
 include 'config.php';
-
+//test
 $id = $_POST['id'] ?? '';
 
 if (empty($id)) {
