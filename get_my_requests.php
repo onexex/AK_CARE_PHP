@@ -1,6 +1,6 @@
 <?php
 header('Content-Type: application/json');
-include 'config.php'; // Siguraduhing MySQLi ito
+include 'config.php';
 
 $user_id = $_GET['user_id'] ?? '';
 
@@ -10,7 +10,6 @@ if (empty($user_id)) {
 }
 
 try {
-    // Kunin ang mga requests mula sa pinakabago (DESC)
     $sql = "SELECT request_id, consultation_reason, preferred_date, phone_number, status, created_at 
             FROM teleconsult_requests 
             WHERE phone_number = ? 
@@ -26,7 +25,7 @@ try {
         $requests[] = $row;
     }
 
-    ob_clean(); // Linisin ang buffer para walang extra characters
+    ob_clean(); 
     echo json_encode([
         "status" => "success",
         "data" => $requests
