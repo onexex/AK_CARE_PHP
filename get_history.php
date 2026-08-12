@@ -9,8 +9,20 @@ if (empty($user_id)) {
     exit;
 }
 
-$stmt = $conn->prepare("SELECT * FROM tblcrmlogsdata WHERE p_contact = ? ORDER BY created_at DESC");
-$stmt->bind_param("s", $user_id);
+// A member's consultations are logged against whichever spelling of their number
+// the CRM held at the time, so an exact match returned only part of the history
+// — 2 of 7 rows for a member whose records span both forms. Silent truncation of
+// medical history is worse than an empty screen, because it looks like it worked.
+$phones = ph_mobile_variants($user_id);
+
+if ($phones === []) {
+    echo json_encode(["status" => "error", "message" => "Invalid mobile number"]);
+    exit;
+}
+
+$in = implode(',', array_fill(0, count($phones), '?'));
+$stmt = $conn->prepare("SELECT * FROM tblcrmlogsdata WHERE p_contact IN ({$in}) ORDER BY created_at DESC");
+$stmt->bind_param(str_repeat('s', count($phones)), ...$phones);
 $stmt->execute();
 $result = $stmt->get_result();
 

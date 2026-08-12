@@ -40,7 +40,14 @@ while ($row = $result->fetch_assoc()) {
     ];
 }
 
-// Mark all as read
-$conn->query("UPDATE community_notifications SET is_read = 1 WHERE user_id = $userId");
+// Mark all as read.
+//
+// Bound, not interpolated. This was "... WHERE user_id = $userId" with $userId
+// taken straight from $_GET — an injection point on a write, where user_id=1 OR 1=1
+// would clear every member's notifications. The SELECT above was already bound;
+// only this statement was not.
+$markRead = $conn->prepare("UPDATE community_notifications SET is_read = 1 WHERE user_id = ?");
+$markRead->bind_param("s", $userId);
+$markRead->execute();
 
 echo json_encode(["status" => "success", "data" => $notifications]);

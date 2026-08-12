@@ -16,6 +16,17 @@ if (empty($user_id) || empty($reason) || empty($preferred_date)) {
     exit;
 }
 
+// Store one spelling only. Existing rows are 09XXXXXXXXX, and the app sends
+// whichever form the member's row happens to hold, so writing it through
+// unchanged was fragmenting the table against itself.
+$phone = ph_mobile_local($phone);
+
+if ($phone === '') {
+    ob_clean();
+    echo json_encode(["status" => "error", "message" => "Invalid mobile number"]);
+    exit;
+}
+
 try {
     $conn->begin_transaction();
 
