@@ -2,15 +2,14 @@
 header('Content-Type: application/json');
 require 'config.php';
 
-$userId    = $_POST['user_id'] ?? '';
+// A member edits their own profile and nobody else's, so the row to update is
+// the session's — a user_id in the body used to be enough to rewrite any
+// member's name and contact number in a 1.3M-row table.
+$member    = require_member($conn);
+$userId    = $member['member_id'];
 $contact   = $_POST['contact'] ?? '';
 $mFname    = $_POST['m_fname'] ?? '';
 $mSurname  = $_POST['m_surname'] ?? '';
-
-if (empty($userId)) {
-    echo json_encode(["status" => "error", "message" => "User ID required"]);
-    exit;
-}
 
 $updates = [];
 $types   = "";

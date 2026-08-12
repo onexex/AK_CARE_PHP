@@ -2,10 +2,13 @@
 header('Content-Type: application/json');
 require '../config.php';
 
+// The ownership check below was only ever as good as this value: supplying the
+// post owner's member_id satisfied it. It now comes from the session.
+$member = require_member($conn);
+$userId = $member['member_id'];
 $postId = $_POST['post_id'] ?? '';
-$userId = $_POST['user_id'] ?? '';
 
-if (empty($postId) || empty($userId)) {
+if (empty($postId)) {
     echo json_encode(["status" => "error", "message" => "Missing parameters"]);
     exit;
 }

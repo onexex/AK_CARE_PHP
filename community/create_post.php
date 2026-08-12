@@ -2,11 +2,14 @@
 header('Content-Type: application/json');
 require '../config.php';
 
-$userId  = $_POST['user_id'] ?? '';
+// The author is whoever is signed in. Posting under someone else's name was a
+// matter of changing one field in the request body.
+$member  = require_member($conn);
+$userId  = $member['member_id'];
 $content = $_POST['content'] ?? '';
 $images  = $_POST['images'] ?? '[]'; // JSON array of base64 or paths
 
-if (empty($userId) || empty($content)) {
+if (empty($content)) {
     echo json_encode(["status" => "error", "message" => "Missing required fields"]);
     exit;
 }

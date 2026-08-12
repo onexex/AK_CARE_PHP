@@ -11,26 +11,50 @@ if (empty($phone) || empty($otp)) {
     exit;
 }
 
-// 1. Check the most recent OTP log
-$stmt = $conn->prepare("SELECT * FROM otp_logs WHERE phone_number = ? AND otp_code = ? AND is_verified = 0 ORDER BY created_at DESC LIMIT 1");
-$stmt->bind_param("ss", $phone, $otp);
+// Canonical 10-digit form — check_user.php logs the OTP under this, and the
+// member lookup below accepts any spelling the number is stored in.
+$core = ph_mobile_core($phone);
+
+if ($core === '') {
+    echo json_encode(["status" => "error", "message" => "Please enter a valid mobile number"]);
+    exit;
+}
+
+// 1. Check the most recent OTP log. A code is usable only while unverified and
+//    inside its validity window; the cutoff is computed by MySQL rather than PHP
+//    so a timezone difference between the two cannot widen or shrink it.
+//    The interval is an integer constant defined in config.php, never user input.
+$window = (int) OTP_VALIDITY_MINUTES;
+$stmt = $conn->prepare(
+    "SELECT * FROM otp_logs
+     WHERE phone_number = ?
+       AND otp_code = ?
+       AND is_verified = 0
+       AND created_at >= (NOW() - INTERVAL {$window} MINUTE)
+     ORDER BY created_at DESC
+     LIMIT 1"
+);
+$stmt->bind_param("ss", $core, $otp);
 $stmt->execute();
 $result = $stmt->get_result();
 
 if ($result->num_rows > 0) {
-    
+
     $update = $conn->prepare("UPDATE otp_logs SET is_verified = 1 WHERE phone_number = ? AND otp_code = ?");
-    $update->bind_param("ss", $phone, $otp);
+    $update->bind_param("ss", $core, $otp);
     $update->execute();
- 
-    $userStmt = $conn->prepare("SELECT member_id, contact_number, firstname, lastname FROM members WHERE contact_number = ?");
-    $userStmt->bind_param("s", $phone);
-    $userStmt->execute();
-    $userData = $userStmt->get_result()->fetch_assoc();
+
+    $userData = ph_find_member($conn, $phone, 'member_id, contact_number, firstname, lastname');
 
     if ($userData) {
+        // The only place a session is created. Everything after this point in
+        // the app's life carries the token instead of naming a member.
+        $session = issue_member_session($conn, $userData['member_id']);
+
         echo json_encode([
             "status" => "success",
+            "token" => $session['token'],
+            "expires_in" => $session['expires_in'],
             "user" => [
                 "id" => $userData['member_id'],
                 "contact" => $userData['contact_number'],

@@ -2,12 +2,9 @@
 header('Content-Type: application/json');
 require '../config.php';
 
-$userId = $_GET['user_id'] ?? '';
-
-if (empty($userId)) {
-    echo json_encode(["status" => "error", "message" => "user_id required"]);
-    exit;
-}
+// Reading another member's notifications was a matter of naming them.
+$member = require_member($conn);
+$userId = $member['member_id'];
 
 $stmt = $conn->prepare("SELECT n.*, m.contact_number AS contact, m.firstname, m.lastname, p.content AS post_preview
     FROM community_notifications n
@@ -40,7 +37,14 @@ while ($row = $result->fetch_assoc()) {
     ];
 }
 
-// Mark all as read
-$conn->query("UPDATE community_notifications SET is_read = 1 WHERE user_id = $userId");
+// Mark all as read.
+//
+// Bound, not interpolated. This was "... WHERE user_id = $userId" with $userId
+// taken straight from $_GET — an injection point on a write, where user_id=1 OR 1=1
+// would clear every member's notifications. The SELECT above was already bound;
+// only this statement was not.
+$markRead = $conn->prepare("UPDATE community_notifications SET is_read = 1 WHERE user_id = ?");
+$markRead->bind_param("s", $userId);
+$markRead->execute();
 
 echo json_encode(["status" => "success", "data" => $notifications]);
