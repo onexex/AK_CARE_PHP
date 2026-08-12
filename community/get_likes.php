@@ -16,6 +16,8 @@ function decryptLaravelData($payload, $appKeyBase64) {
     } catch (Exception $e) { return null; }
 }
 
+require_member($conn);
+
 $appKey = "base64:NusO0N5yu2WM4bbP7qDg9DfJc9FpglsPgtvSapEHxpM=";
 $postId = $_GET['post_id'] ?? '';
 

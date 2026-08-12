@@ -2,18 +2,15 @@
 header('Content-Type: application/json');
 include 'config.php';
 
-$user_id = $_GET['user_id'] ?? '';
-
-if (empty($user_id)) {
-    echo json_encode(["status" => "error", "message" => "User ID is required"]);
-    exit;
-}
+// Somebody's medical history, keyed until now on a phone number anyone could
+// type into the query string.
+$member = require_member($conn);
 
 // A member's consultations are logged against whichever spelling of their number
 // the CRM held at the time, so an exact match returned only part of the history
 // — 2 of 7 rows for a member whose records span both forms. Silent truncation of
 // medical history is worse than an empty screen, because it looks like it worked.
-$phones = ph_mobile_variants($user_id);
+$phones = ph_mobile_variants($member['contact_number'] ?? '');
 
 if ($phones === []) {
     echo json_encode(["status" => "error", "message" => "Invalid mobile number"]);

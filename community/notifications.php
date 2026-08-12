@@ -2,12 +2,9 @@
 header('Content-Type: application/json');
 require '../config.php';
 
-$userId = $_GET['user_id'] ?? '';
-
-if (empty($userId)) {
-    echo json_encode(["status" => "error", "message" => "user_id required"]);
-    exit;
-}
+// Reading another member's notifications was a matter of naming them.
+$member = require_member($conn);
+$userId = $member['member_id'];
 
 $stmt = $conn->prepare("SELECT n.*, m.contact_number AS contact, m.firstname, m.lastname, p.content AS post_preview
     FROM community_notifications n

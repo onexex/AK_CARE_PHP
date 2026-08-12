@@ -2,10 +2,13 @@
 header('Content-Type: application/json');
 require '../config.php';
 
+// The like belongs to the signed-in member: liking on someone else's behalf, or
+// clearing their like, was previously just a matter of naming them.
+$member = require_member($conn);
+$userId = $member['member_id'];
 $postId = $_POST['post_id'] ?? '';
-$userId = $_POST['user_id'] ?? '';
 
-if (empty($postId) || empty($userId)) {
+if (empty($postId)) {
     echo json_encode(["status" => "error", "message" => "Missing parameters"]);
     exit;
 }

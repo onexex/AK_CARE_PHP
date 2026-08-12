@@ -5,12 +5,17 @@ header('Content-Type: application/json');
 
 include 'config.php'; 
 
-$user_id = $_POST['user_id'] ?? '';
+// The request is filed for the signed-in member, on the number the registry
+// holds for them — both used to come from the request body, so a consultation
+// could be booked in anyone's name against any number.
+$member  = require_member($conn);
+$user_id = $member['member_id'];
+$phone   = $member['contact_number'] ?? '';
+
 $reason = $_POST['consultation_reason'] ?? '';
 $preferred_date = $_POST['preferred_date'] ?? '';
-$phone = $_POST['phone_number'] ?? '';
 
-if (empty($user_id) || empty($reason) || empty($preferred_date)) {
+if (empty($reason) || empty($preferred_date)) {
     ob_clean();
     echo json_encode(["status" => "error", "message" => "Please provide all required fields."]);
     exit;

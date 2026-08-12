@@ -6,14 +6,10 @@ ob_start();
 header('Content-Type: application/json');
 include 'config.php';
 
-// The member_id the app holds in its session, the same value the request was
-// filed and is cancelled under.
-$user_id = $_GET['user_id'] ?? '';
-
-if (empty($user_id)) {
-    echo json_encode(["status" => "error", "message" => "User ID is required"]);
-    exit;
-}
+// Whoever is signed in — the same member the request was filed and is cancelled
+// under.
+$member  = require_member($conn);
+$user_id = $member['member_id'];
 
 // Rows written since the member_id column exists are matched on it exactly.
 // Older rows carry NULL and can only be matched on the number they were filed

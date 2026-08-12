@@ -2,10 +2,14 @@
 header('Content-Type: application/json');
 require '../config.php';
 
+// The feed is member-only, and 'liked_by_me' below only means anything if 'me'
+// is established rather than asserted.
+$member = require_member($conn);
+$userId = $member['member_id'];
+
 $page   = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
 $limit  = 10;
 $offset = ($page - 1) * $limit;
-$userId = $_GET['user_id'] ?? '0';
 
 $sql = "SELECT p.*,
                (SELECT COUNT(*) FROM community_post_likes WHERE post_id = p.id) AS like_count,

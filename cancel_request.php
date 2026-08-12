@@ -2,18 +2,14 @@
 header('Content-Type: application/json');
 include 'config.php';
 
-$id = $_POST['id'] ?? '';
-// The member_id the app holds in its session, the same value save_teleconsult.php
-// files the request under.
-$user_id = $_POST['user_id'] ?? '';
+// Whoever is signed in — the same member save_teleconsult.php files a request
+// under. Naming a member in the body used to be enough to cancel for them.
+$member  = require_member($conn);
+$user_id = $member['member_id'];
+$id      = $_POST['id'] ?? '';
 
 if (empty($id)) {
     echo json_encode(["status" => "error", "message" => "ID is required"]);
-    exit;
-}
-
-if (empty($user_id)) {
-    echo json_encode(["status" => "error", "message" => "User ID is required"]);
     exit;
 }
 

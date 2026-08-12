@@ -17,19 +17,15 @@ ob_start();
 header('Content-Type: application/json');
 require '../config.php';
 
-$userId = $_GET['user_id'] ?? '';
-
-if (empty($userId)) {
-    ob_clean();
-    echo json_encode(["status" => "error", "message" => "user_id required"]);
-    exit;
-}
+// Clinical records: whose they are is decided by the session, never by the
+// request.
+$member = require_member($conn);
+$userId = $member['member_id'];
 
 // consultations.member_id is the numeric members.id, not the 'AKM-787' string
-// the app holds, so the member is resolved first. The contact number is carried
-// alongside because the import could only link 1913 of 2097 rows: the rest name
-// the member in `member_ref` or nothing at all, and are reachable by number only.
-$memberRow = null;
+// the session carries, so it is resolved here. The contact number comes along
+// because the import could only link 1913 of 2097 rows: the rest name the member
+// in `member_ref` or nothing at all, and are reachable by number only.
 $stmt = $conn->prepare("SELECT id, contact_number FROM members WHERE member_id = ? LIMIT 1");
 $stmt->bind_param('s', $userId);
 $stmt->execute();

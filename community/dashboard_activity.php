@@ -2,8 +2,8 @@
 header('Content-Type: application/json');
 require '../config.php';
 
-$userId = $_GET['user_id'] ?? '';
-if (empty($userId)) { echo json_encode(["status"=>"error","message"=>"user_id required"]); exit; }
+$authenticated = require_member($conn);
+$userId = $authenticated['member_id'];
 
 // The app sends members.member_id — a varchar like 'AKM-787' or '001-0005-0701'.
 // Two of the tables below are keyed on member_id and two on the member's phone

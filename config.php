@@ -27,6 +27,10 @@
   // Phone number normalization helpers, used wherever a member is looked up by number.
   require_once __DIR__ . '/phone.php';
 
+  // Session handling. Endpoints call require_member($conn) instead of reading a
+  // user_id, so the caller cannot name anyone but themselves.
+  require_once __DIR__ . '/auth.php';
+
   // How long a verification code stays usable. Enforced in verify_otp.php and
   // quoted in the SMS by check_user.php — both read it from here so they cannot drift.
   define('OTP_VALIDITY_MINUTES', 5);

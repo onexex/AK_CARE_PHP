@@ -2,11 +2,13 @@
 header('Content-Type: application/json');
 require '../config.php';
 
+// The author of the reply is whoever is signed in, not whoever the request says.
+$member    = require_member($conn);
+$userId    = $member['member_id'];
 $commentId = $_POST['comment_id'] ?? '';
-$userId    = $_POST['user_id'] ?? '';
 $reply     = $_POST['reply'] ?? '';
 
-if (empty($commentId) || empty($userId) || empty($reply)) {
+if (empty($commentId) || empty($reply)) {
     echo json_encode(["status" => "error", "message" => "Missing fields"]);
     exit;
 }

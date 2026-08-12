@@ -2,11 +2,14 @@
 header('Content-Type: application/json');
 require '../config.php';
 
+// The reporter is the signed-in member. Reports filed under someone else's name
+// are worse than useless once anyone acts on them.
+$member = require_member($conn);
+$userId = $member['member_id'];
 $postId = $_POST['post_id'] ?? '';
-$userId = $_POST['user_id'] ?? '';
 $reason = $_POST['reason'] ?? '';
 
-if (empty($postId) || empty($userId) || empty($reason)) {
+if (empty($postId) || empty($reason)) {
     echo json_encode(["status" => "error", "message" => "Missing required fields"]);
     exit;
 }

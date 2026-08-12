@@ -47,8 +47,14 @@ if ($result->num_rows > 0) {
     $userData = ph_find_member($conn, $phone, 'member_id, contact_number, firstname, lastname');
 
     if ($userData) {
+        // The only place a session is created. Everything after this point in
+        // the app's life carries the token instead of naming a member.
+        $session = issue_member_session($conn, $userData['member_id']);
+
         echo json_encode([
             "status" => "success",
+            "token" => $session['token'],
+            "expires_in" => $session['expires_in'],
             "user" => [
                 "id" => $userData['member_id'],
                 "contact" => $userData['contact_number'],

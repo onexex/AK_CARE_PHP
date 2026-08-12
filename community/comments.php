@@ -11,6 +11,11 @@ function formatUser($row) {
     ];
 }
 
+// Community content is for members. Every branch below needs a session, so it
+// is established once here rather than three times.
+$member = require_member($conn);
+$userId = $member['member_id'];
+
 $method = $_SERVER['REQUEST_METHOD'];
 
 // ── GET comments for a post ──
@@ -57,10 +62,9 @@ if ($method === 'GET') {
 // ── POST: Create comment ──
 if ($method === 'POST') {
     $postId  = $_POST['post_id'] ?? '';
-    $userId  = $_POST['user_id'] ?? '';
     $comment = $_POST['comment'] ?? '';
 
-    if (empty($postId) || empty($userId) || empty($comment)) {
+    if (empty($postId) || empty($comment)) {
         echo json_encode(["status"=>"error","message"=>"Missing fields"]);
         exit;
     }
@@ -73,7 +77,9 @@ if ($method === 'POST') {
     if ($postRow && $postRow['user_id'] != $userId) {
         $notify = $conn->prepare("INSERT INTO community_notifications (user_id, type, post_id, comment_id, from_user_id) VALUES (?, 'comment', ?, ?, ?)");
         $cid = $conn->insert_id;
-        $notify->bind_param("sisi", $postRow['user_id'], $postId, $cid, $userId);
+        // from_user_id is a member_id ('AKM-787'), bound as "i" here until now —
+        // so every comment notification recorded that it came from member 0.
+        $notify->bind_param("siis", $postRow['user_id'], $postId, $cid, $userId);
         $notify->execute();
     }
 
@@ -83,8 +89,7 @@ if ($method === 'POST') {
 
 // ── DELETE comment ──
 $id = $_POST['id'] ?? '';
-$userId = $_POST['user_id'] ?? '';
-if (empty($id) || empty($userId)) { echo json_encode(["status"=>"error","message"=>"Missing fields"]); exit; }
+if (empty($id)) { echo json_encode(["status"=>"error","message"=>"Missing fields"]); exit; }
 
 $stmt = $conn->prepare("DELETE FROM community_comments WHERE id = ? AND user_id = ?");
 $stmt->bind_param("is", $id, $userId);
