@@ -3,9 +3,8 @@ header('Content-Type: application/json');
 include 'config.php';
 
 $id = $_POST['id'] ?? '';
-// The member's contact number, the same value get_my_requests.php is called
-// with. teleconsult_requests has no member_id column, so the phone number is
-// the only link between a request and the member who filed it.
+// The member_id the app holds in its session, the same value save_teleconsult.php
+// files the request under.
 $user_id = $_POST['user_id'] ?? '';
 
 if (empty($id)) {
@@ -18,28 +17,32 @@ if (empty($user_id)) {
     exit;
 }
 
-// Stored numbers come in both 09XXXXXXXXX and 9XXXXXXXXX form, so the owner
-// check has to compare against every variant — the same match get_my_requests.php
-// uses to decide the request is yours in the first place. Without this the
-// UPDATE keyed on request_id alone, a sequential integer, so any member could
-// cancel any other member's pending consultation.
-$phones = ph_mobile_variants($user_id);
-
-if ($phones === []) {
-    echo json_encode(["status" => "error", "message" => "Invalid mobile number"]);
-    exit;
-}
+// Rows written since the member_id column exists are matched on it exactly.
+// Older rows carry NULL and can only be matched on the number they were filed
+// with, in any of its spellings — approximate, since numbers are shared, but it
+// is that or lock those members out of cancelling their own requests.
+$phones = ph_member_variants($conn, $user_id);
 
 try {
-    $in = implode(',', array_fill(0, count($phones), '?'));
-    $sql = "UPDATE teleconsult_requests
-            SET status = 'Cancelled'
-            WHERE request_id = ?
-              AND status = 'Pending'
-              AND phone_number IN ({$in})";
-
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param('i' . str_repeat('s', count($phones)), $id, ...$phones);
+    if ($phones === []) {
+        $sql = "UPDATE teleconsult_requests
+                SET status = 'Cancelled'
+                WHERE request_id = ?
+                  AND status = 'Pending'
+                  AND member_id = ?";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param('is', $id, $user_id);
+    } else {
+        $in = implode(',', array_fill(0, count($phones), '?'));
+        $sql = "UPDATE teleconsult_requests
+                SET status = 'Cancelled'
+                WHERE request_id = ?
+                  AND status = 'Pending'
+                  AND ( member_id = ?
+                        OR (member_id IS NULL AND phone_number IN ({$in})) )";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param('is' . str_repeat('s', count($phones)), $id, $user_id, ...$phones);
+    }
 
     if ($stmt->execute() && $stmt->affected_rows > 0) {
         echo json_encode(["status" => "success", "message" => "Request cancelled."]);

@@ -65,6 +65,28 @@ function ph_mobile_international(string $raw): string
 }
 
 /**
+ * Every spelling of the number a member is registered under.
+ *
+ * The mirror of ph_mobile_variants(): that one starts from a number the caller
+ * supplied, this one from a member_id. Used to decide ownership of legacy
+ * teleconsult_requests rows, which predate the member_id column and can only be
+ * matched on phone_number.
+ *
+ * Returns an empty array when the member does not exist or their stored number
+ * is not a usable PH mobile.
+ */
+function ph_member_variants(mysqli $conn, string $memberId): array
+{
+    $stmt = $conn->prepare("SELECT contact_number FROM members WHERE member_id = ? LIMIT 1");
+    $stmt->bind_param('s', $memberId);
+    $stmt->execute();
+
+    $row = $stmt->get_result()->fetch_assoc();
+
+    return $row ? ph_mobile_variants($row['contact_number'] ?? '') : [];
+}
+
+/**
  * Look a member up by any spelling of their number.
  *
  * $columns is spliced into the SELECT, so it must never contain user input.

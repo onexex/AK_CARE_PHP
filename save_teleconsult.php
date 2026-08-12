@@ -27,20 +27,37 @@ if ($phone === '') {
     exit;
 }
 
+// Refuse to file a request under a member_id that does not exist, so the column
+// cannot fill up with values nothing can ever match.
+$memberCheck = $conn->prepare("SELECT 1 FROM members WHERE member_id = ? LIMIT 1");
+$memberCheck->bind_param('s', $user_id);
+$memberCheck->execute();
+
+if (!$memberCheck->get_result()->fetch_row()) {
+    ob_clean();
+    echo json_encode(["status" => "error", "message" => "Unknown member"]);
+    exit;
+}
+$memberCheck->close();
+
 try {
     $conn->begin_transaction();
 
-    $sql = "INSERT INTO teleconsult_requests 
-            ( consultation_reason, preferred_date, phone_number) 
-            VALUES ( ?, ?, ?)";
-    
+    // $user_id is the member_id the app holds in its session. It was previously
+    // checked for emptiness and then dropped, leaving phone_number as the only
+    // link back to the member — and numbers are neither unique nor stored in one
+    // spelling. Recording it makes ownership exact for every new row.
+    $sql = "INSERT INTO teleconsult_requests
+            ( member_id, consultation_reason, preferred_date, phone_number)
+            VALUES ( ?, ?, ?, ?)";
+
     $stmt = $conn->prepare($sql);
 
     if ($stmt === false) {
         throw new Exception("Prepare failed: " . $conn->error);
     }
 
-    $stmt->bind_param("sss",  $reason, $preferred_date, $phone);
+    $stmt->bind_param("ssss", $user_id, $reason, $preferred_date, $phone);
 
     if ($stmt->execute()) {
         $conn->commit();
