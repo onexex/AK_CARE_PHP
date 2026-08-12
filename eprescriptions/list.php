@@ -10,7 +10,8 @@ if (empty($userId)) {
 }
 
 $stmt = $conn->prepare("SELECT * FROM eprescriptions WHERE user_id = ? ORDER BY created_at DESC");
-$stmt->bind_param("i", $userId);
+// user_id is a member_id ('AKM-787'), not an integer — bind as a string.
+$stmt->bind_param("s", $userId);
 $stmt->execute();
 $result = $stmt->get_result();
 
